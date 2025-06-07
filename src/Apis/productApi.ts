@@ -28,6 +28,7 @@ const productApi = createApi({
                 },
                 body: productData
             }),
+            invalidatesTags: ['Products'],
         }),
     }),
 });

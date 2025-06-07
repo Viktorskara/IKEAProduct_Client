@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { productModel } from "../../../../Interfaces";
-import { colourMap, Loader } from "../../../../Assets";
+import { colourMap } from "../../../../Assets";
 import { useGetProductsQuery } from "../../../../Apis/productApi";
 import { useDispatch } from "react-redux";
 import { setProduct } from "../../../../Redux/productSlice";
@@ -15,7 +15,7 @@ function ProductList() {
     if (!isLoading && data?.result) {
       dispatch(setProduct(data.result));
     }
-  }, [isLoading]);
+  }, [isLoading, data?.result, dispatch]);
 
   const skeletonRows = Array.from({ length: 5 });
 
@@ -59,7 +59,7 @@ function ProductList() {
                   <td>{product.productType.name}</td>
                   <td>
                     {product.colours?.map((colour, idx) => {
-                      const hexColor = colourMap[colour] || colour;
+                      const hexColor = colourMap[colour.name] || colour.name;
                       return (
                         <div
                           key={idx}
@@ -79,7 +79,7 @@ function ProductList() {
                               border: "1px solid #ccc",
                             }}
                           />
-                          <span>{colour}</span>
+                          <span>{colour.name}</span>
                         </div>
                       );
                     })}

@@ -4,8 +4,9 @@ import { useCreateProductMutation, useGetProductsQuery } from "../Apis/productAp
 import { useDispatch } from "react-redux";
 import { setProduct } from "../Redux/productSlice";
 import { ColourTagsInput } from "../Components/Layout/Page/Product/CreateProduct";
-import { apiResponse } from "../Interfaces";
+import { apiResponse, Colour, productModel } from "../Interfaces";
 import { useNavigate } from "react-router-dom";
+import ColourModel from "../Interfaces/ColourModel";
 
 const productData = {
   name: "",
@@ -19,9 +20,7 @@ function CreateProduct() {
   const [createProduct] = useCreateProductMutation();
   const [loading, setLoading] = useState(false);
   const [productInputs, setProductInput] = useState(productData);
-  const [productTypes, setProductTypes] = useState<
-    { id: number; name: string }[]
-  >([]);
+  const [productTypes, setProductTypes] = useState<{ id: number; name: string }[]>([]);
   const [colours, setColours] = useState<{ id: number; name: string }[]>([]);
   const [selectedColourNames, setSelectedColourNames] = useState<string[]>([]);
   const { data } = useGetProductsQuery(null);
@@ -41,10 +40,19 @@ function CreateProduct() {
       });
       setProductTypes(Array.from(uniqueTypesMap.values()));
 
-      setColours(data.result.colours || []);
-      console.log(data.result.colours);
+      const uniqueColoursMap = new Map<number, ColourModel>();
+      data.result.forEach((product: productModel) => {
+        product.colours.forEach((colour) => {
+          if (!uniqueColoursMap.has(colour.id)) {
+            uniqueColoursMap.set(colour.id, colour);
+          }
+        });
+      });
+      const uniqueColours: Colour[] = Array.from(uniqueColoursMap.values());
+      setColours(uniqueColours);
+      console.log(uniqueColours);
     }
-  }, [data]);
+  }, [data, dispatch]);
 
   const handleProductInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -57,13 +65,13 @@ function CreateProduct() {
     e.preventDefault();
     setLoading(true);
     const response : apiResponse = await createProduct({
-      name: productData.name,
+      name: productInputs.name,
       productTypeId: productInputs.productTypeId,
       colourIds: selectedColourNames
     });
     if(response.data) {
       toastNotify("Item added successfully!");
-      navigate("/Home");
+      navigate("/");
     } else if (response.error) {
       toastNotify(response.error.data.errorMessages[0], "error");
     }
@@ -82,7 +90,7 @@ function CreateProduct() {
               placeholder="Enter Name"
               required
               name="name"
-              value={productData.name}
+              value={productInputs.name}
               onChange={handleProductInput}
             />
             <select
@@ -102,7 +110,10 @@ function CreateProduct() {
               ))}
             </select>
             <div className="mt-3">
-                <ColourTagsInput onChange={setSelectedColourNames} />
+                <ColourTagsInput
+                  onChange={setSelectedColourNames}
+                  options={colours}
+                />
             </div>            
             <div className="text-center">
               <button

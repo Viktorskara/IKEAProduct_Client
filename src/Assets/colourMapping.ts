@@ -1,5 +1,5 @@
 export const colourMap: Record<string, string> = {
-  // Your custom colors
+  // Custom colors
   Ruby: "#E0115F",
   Emerald: "#50C878",
 
