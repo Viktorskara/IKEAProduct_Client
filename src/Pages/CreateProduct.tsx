@@ -4,9 +4,10 @@ import { useCreateProductMutation, useGetProductsQuery } from "../Apis/productAp
 import { useDispatch } from "react-redux";
 import { setProduct } from "../Redux/productSlice";
 import { ColourTagsInput } from "../Components/Layout/Page/Product/CreateProduct";
-import { apiResponse, Colour, productModel } from "../Interfaces";
+import { apiResponse } from "../Interfaces";
 import { useNavigate } from "react-router-dom";
-import ColourModel from "../Interfaces/ColourModel";
+import { useGetColoursQuery } from "../Apis/colourApi";
+import { useGetProductTypesQuery } from "../Apis/productTypeApi";
 
 const productData = {
   name: "",
@@ -23,36 +24,25 @@ function CreateProduct() {
   const [productTypes, setProductTypes] = useState<{ id: number; name: string }[]>([]);
   const [colours, setColours] = useState<{ id: number; name: string }[]>([]);
   const [selectedColourNames, setSelectedColourNames] = useState<string[]>([]);
-  const { data } = useGetProductsQuery(null);
+  const { data: productsData } = useGetProductsQuery(null);
+  const { data: coloursData } = useGetColoursQuery(null);
+  const { data: productTypesData } = useGetProductTypesQuery(null);
+
 
   useEffect(() => {
-    if (data && data?.result) {
-      dispatch(setProduct(data.result));
+    if (productsData?.result && coloursData?.result && productTypesData?.result) {
+      dispatch(setProduct(productsData.result));
+      setColours(coloursData);
+      setProductTypes(productTypesData);
 
-      console.log(data.result);
-
-      const types = data.result.map((product: any) => product.productType);
-      const uniqueTypesMap = new Map<number, { id: number; name: string }>();
-      types.forEach((type: { id: number; name: string }) => {
-        if (type && !uniqueTypesMap.has(type.id)) {
-          uniqueTypesMap.set(type.id, type);
-        }
-      });
-      setProductTypes(Array.from(uniqueTypesMap.values()));
-
-      const uniqueColoursMap = new Map<number, ColourModel>();
-      data.result.forEach((product: productModel) => {
-        product.colours.forEach((colour) => {
-          if (!uniqueColoursMap.has(colour.id)) {
-            uniqueColoursMap.set(colour.id, colour);
-          }
-        });
-      });
-      const uniqueColours: Colour[] = Array.from(uniqueColoursMap.values());
-      setColours(uniqueColours);
-      console.log(uniqueColours);
+      console.log(productsData.result);
+      console.log(coloursData.result);
+      console.log(productTypesData.result);
+      
+      setProductTypes(Array.from(productTypesData.result.values()));
+      setColours(Array.from(coloursData.result.values()));
     }
-  }, [data, dispatch]);
+  }, [productsData, dispatch, coloursData, productTypesData]);
 
   const handleProductInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -73,7 +63,9 @@ function CreateProduct() {
       toastNotify("Item added successfully!");
       navigate("/");
     } else if (response.error) {
-      toastNotify(response.error.data.errorMessages[0], "error");
+      const errorMessages = response.error.data?.ErrorMessages ?? ["Something went wrong."];
+      const message = Array.isArray(errorMessages) ? errorMessages[0] : String(errorMessages);
+      toastNotify(message, "error");
     }
     setLoading(false);
   };
